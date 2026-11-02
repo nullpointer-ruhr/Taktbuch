@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.12.2
+
+- Online: confirming a new e-mail address now takes a click on "Confirm address" instead of happening as soon as the page opens. Link scanners in company mail filters open links in advance and could otherwise use up the link.
+- Online, operators: new command `change-email <old> <new>` changes an account's address directly, without a confirmation link (for addresses that do not receive mails from Taktbuch). Open confirmation and password links become invalid, signed-in devices stay signed in.
+
 ## 1.12.1
 
 - The project moved to github.com/nullpointer-ruhr/Taktbuch. The update check now uses the new address (the old one still forwards).

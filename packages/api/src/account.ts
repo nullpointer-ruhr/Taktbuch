@@ -12,6 +12,29 @@ import { accountDeletedMail, emailChangedMail, emailConfirmMail, type Mailer } f
 
 export const EMAIL_CHANGE_MINUTES = 60;
 
+/**
+ * E-Mail-Adresse direkt ändern, ohne Bestätigungslink (nur über die Kommandozeile des Betreibers).
+ * Für den Fall, dass die neue Adresse Mails von Taktbuch nicht annimmt (Firmen-Mailfilter).
+ * Offene Änderungs- und Passwort-Links werden ungültig, Sessions bleiben bestehen.
+ */
+export async function changeEmailDirect(db: Db, oldEmail: string, newEmail: string): Promise<{ oldEmail: string; newEmail: string }> {
+  const from = normEmail(oldEmail), to = normEmail(newEmail);
+  if (!EMAIL_RE.test(to) || to.length > 254) throw new Error(`Keine gültige E-Mail-Adresse: ${newEmail}`);
+  if (from === to) throw new Error('Alte und neue Adresse sind gleich.');
+  return tx(db, async c => {
+    const u = await c.query<{ id: string }>('SELECT id FROM users WHERE email = $1 FOR UPDATE', [from]);
+    if (!u.rows[0]) throw new Error(`Kein Konto mit der Adresse ${from}.`);
+    const taken = await c.query('SELECT 1 FROM users WHERE email = $1', [to]);
+    if (taken.rowCount) throw new Error(`Die Adresse ${to} gehört schon zu einem anderen Konto.`);
+    const id = u.rows[0].id;
+    await c.query('UPDATE users SET email = $2 WHERE id = $1', [id, to]);
+    await c.query('UPDATE email_changes SET used_at = now() WHERE user_id = $1 AND used_at IS NULL', [id]);
+    await c.query('UPDATE password_resets SET used_at = now() WHERE user_id = $1 AND used_at IS NULL', [id]);
+    await audit(c, null, { event: 'account_email_changed_cli', ok: true, userId: id, email: to, target: from });
+    return { oldEmail: from, newEmail: to };
+  });
+}
+
 const UUID = { type: 'object', required: ['id'], properties: { id: { type: 'string', format: 'uuid' } } } as const;
 const limited = { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } };
 

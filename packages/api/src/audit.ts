@@ -4,7 +4,7 @@ import type { Db, Tx } from './db.ts';
 export type AuditEvent = 'register' | 'login_password' | 'login_mfa' | 'login_recovery' | 'totp_setup' | 'logout' | 'invite_created' | 'password_reset_request' | 'password_reset'
   | 'stepup' | 'invite_revoked' | 'user_locked' | 'user_unlocked' | 'user_sessions_revoked' | 'user_mfa_reset'
   | 'account_password' | 'account_recovery_codes' | 'account_session_revoked' | 'account_deleted'
-  | 'account_email_request' | 'account_email_changed';
+  | 'account_email_request' | 'account_email_changed' | 'account_email_changed_cli';
 
 /** Protokolliert sicherheitsrelevante Ereignisse (Zeit, Nutzer, IP, Gerät, Ergebnis). */
 export async function audit(c: Db | Tx, req: FastifyRequest | null, e: { event: AuditEvent; ok: boolean; userId?: string | null; email?: string | null; target?: string | null }) {

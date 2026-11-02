@@ -11,6 +11,7 @@ import type { FastifyInstance } from 'fastify';
 import { createPool, migrate, type Db } from '../src/db.ts';
 import { buildApp } from '../src/server.ts';
 import { createInvite } from '../src/auth.ts';
+import { changeEmailDirect } from '../src/account.ts';
 import { base32Decode, hotp, stepAt } from '../src/totp.ts';
 import type { Config } from '../src/config.ts';
 import type { Mail } from '../src/mail.ts';
@@ -364,6 +365,24 @@ test('Konto: E-Mail-Adresse ändern mit Bestätigung an die neue Adresse', { ski
   assert.equal((await post('/api/auth/login', { email: 'neu@example.org', password: 'ein-langes-passwort' })).statusCode, 200);
   assert.equal((await post('/api/auth/login', { email: 'alt@example.org', password: 'ein-langes-passwort' })).statusCode, 401);
   assert.equal((await req('GET', '/email-bestaetigen', '')).statusCode, 200, 'Seite ohne Weiterleitung');
+});
+
+test('Konto: E-Mail-Adresse direkt über die Kommandozeile ändern', { skip }, async () => {
+  const u = await register('cli-alt@example.org');
+  await register('cli-belegt@example.org');
+  const open = await req('POST', '/api/account/email', u.cookie, { email: 'cli-offen@example.org', password: 'ein-langes-passwort', code: u.recovery[0] });
+  assert.equal(open.statusCode, 200, open.body);
+  const pending = outbox.at(-1)!.text.match(/email-bestaetigen#email=([A-Za-z0-9_-]+)/)![1];
+  await assert.rejects(changeEmailDirect(db, 'gibtsnicht@example.org', 'x@example.org'), /Kein Konto/);
+  await assert.rejects(changeEmailDirect(db, 'cli-alt@example.org', 'cli-belegt@example.org'), /anderen Konto/);
+  await assert.rejects(changeEmailDirect(db, 'cli-alt@example.org', 'kaputt'), /gültige/);
+  const r = await changeEmailDirect(db, ' CLI-Alt@Example.org ', 'CLI-Neu@Example.org');
+  assert.deepEqual(r, { oldEmail: 'cli-alt@example.org', newEmail: 'cli-neu@example.org' });
+  assert.equal((await req('GET', '/api/me', u.cookie)).json().email, 'cli-neu@example.org', 'Session bleibt');
+  assert.equal((await post('/api/auth/email-confirm', { token: pending })).statusCode, 400, 'offener Bestätigungslink ungültig');
+  assert.equal((await post('/api/auth/login', { email: 'cli-neu@example.org', password: 'ein-langes-passwort' })).statusCode, 200);
+  const a = await db.query("SELECT target FROM audit_log WHERE event = 'account_email_changed_cli' ORDER BY at DESC LIMIT 1");
+  assert.equal(a.rows[0].target, 'cli-alt@example.org');
 });
 
 test('Sync: bisheriger Gesamtstand wird übernommen, ältere Tabs laden neu', { skip }, async () => {
