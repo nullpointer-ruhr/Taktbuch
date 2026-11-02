@@ -95,7 +95,8 @@ h1 .mark{width:30px;height:30px;vertical-align:-6px;margin-right:10px}
 
   <div id="emailDone" hidden>
     <p id="emailMsg"></p>
-    <button id="emailNext" type="button">Weiter</button>
+    <button id="emailConfirm" type="button">Adresse bestätigen</button>
+    <button id="emailNext" type="button" hidden>Weiter</button>
   </div>
 
   <div class="err" id="err" role="alert"></div>
@@ -159,16 +160,26 @@ h1 .mark{width:30px;height:30px;vertical-align:-6px;margin-right:10px}
   });
   fetch('/api/config', { credentials: 'same-origin' }).then(r => r.json()).then(c => { if (c.mail) $('#forgotWrap').hidden = false; }).catch(() => { });
 
-  // Neue E-Mail-Adresse bestätigen (#email=...): ein Klick genügt, Anmeldung nicht nötig.
-  async function confirmEmail(t) {
+  // Neue E-Mail-Adresse bestätigen (#email=...): Anmeldung nicht nötig, aber ein Klick auf den Knopf.
+  // Nicht automatisch beim Laden: Link-Scanner in Firmen-Mailfiltern öffnen Links vorab und würden den Link sonst verbrauchen.
+  let emailToken = null;
+  function confirmEmail(t) {
+    emailToken = t;
     history.replaceState(null, '', '/login');
+    $('#emailMsg').textContent = 'Mit dem Knopf wird die neue Adresse für dein Konto übernommen.';
+    $('#emailConfirm').hidden = false; $('#emailNext').hidden = true;
     show('#emailDone', 'E-Mail-Adresse bestätigen');
+  }
+  $('#emailConfirm').addEventListener('click', async () => {
+    const b = $('#emailConfirm'); b.disabled = true;
     try {
-      const d = await post('/api/auth/email-confirm', { token: t });
+      const d = await post('/api/auth/email-confirm', { token: emailToken });
       $('#emailMsg').textContent = `Erledigt. Dein Konto läuft jetzt über ${d.email}. Melde dich künftig mit dieser Adresse an.`;
       $('#subtitle').textContent = 'Adresse geändert';
+      b.hidden = true; $('#emailNext').hidden = false;
     } catch (e) { $('#emailMsg').textContent = ''; err(e.message); }
-  }
+    finally { b.disabled = false; }
+  });
   $('#emailNext').addEventListener('click', () => { location.href = '/'; });
 
   let inviteToken = null, resetToken = null;

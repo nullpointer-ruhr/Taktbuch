@@ -1,4 +1,12 @@
 {
+  "1.12.2": {
+    "de": [
+      "Online: Eine neue E-Mail-Adresse wird jetzt mit dem Knopf „Adresse bestätigen“ übernommen, nicht schon beim Öffnen des Links. Link-Scanner in Firmen-Mailfiltern haben den Link sonst vorab verbraucht."
+    ],
+    "en": [
+      "Online: a new e-mail address is now applied with the \"Confirm address\" button, not as soon as the link opens. Link scanners in company mail filters could otherwise use up the link."
+    ]
+  },
   "1.12.1": {
     "de": [
       "Fehler behoben: Liegt das Startdatum in der aktuellen Woche oder in der Zukunft (neues Konto), ließen sich Heute, Woche und Kalender nicht öffnen. Tage vor dem Startdatum zeigen jetzt einen Hinweis.",

@@ -1,9 +1,11 @@
 // Verwaltung über die Kommandozeile, im Cluster z. B.:
 //   kubectl -n taktbuch-staging exec deploy/taktbuch-app -- node packages/api/src/cli.ts invite mella@example.org
 //   kubectl -n taktbuch-staging exec deploy/taktbuch-app -- node packages/api/src/cli.ts admin taktbuch@pm.me
+//   kubectl -n taktbuch-staging exec deploy/taktbuch-app -- node packages/api/src/cli.ts change-email alt@example.org neu@example.org
 import { createPool, migrate } from './db.ts';
 import { createInvite } from './auth.ts';
-import { createMailer } from './mail.ts';
+import { createMailer, emailChangedMail } from './mail.ts';
+import { changeEmailDirect } from './account.ts';
 import { loadConfig } from './config.ts';
 
 const [cmd, ...args] = process.argv.slice(2);
@@ -28,8 +30,19 @@ try {
     if (mailError) console.log(`Mailversand fehlgeschlagen: ${mailError}`);
     console.log(mailed ? 'Mail ist verschickt. Link zur Sicherheit:' : mailError ? 'Link selbst weitergeben:' : (mailer ? 'Ohne E-Mail-Adresse keine Mail. Link:' : 'Kein Mailversand eingerichtet (SMTP_URL). Link selbst weitergeben:'));
     console.log(link);
+  } else if (cmd === 'change-email') {
+    const [from, to] = args.filter(a => !a.startsWith('--'));
+    if (!from || !to) throw new Error('Aufruf: change-email <alte Adresse> <neue Adresse>');
+    const r = await changeEmailDirect(db, from, to);
+    console.log(`Konto läuft jetzt über ${r.newEmail} (vorher ${r.oldEmail}). Anmeldung ab sofort mit der neuen Adresse.`);
+    const mailer = createMailer(loadConfig({ ...process.env, TOTP_KEY: process.env.TOTP_KEY || Buffer.alloc(32).toString('base64') }));
+    if (mailer && !args.includes('--no-mail')) {
+      await mailer.send(emailChangedMail(r.oldEmail, r.newEmail))
+        .then(() => console.log(`Hinweis an ${r.oldEmail} verschickt.`))
+        .catch(e => console.log(`Hinweis an die alte Adresse nicht verschickt: ${(e as Error).message}`));
+    }
   } else {
-    console.log('Befehle:\n  migrate\n  invite [email] [--days=7]   Einladung für ein Nutzerkonto\n  admin <email> [--days=7]    Einladung für ein Admin-Konto (Verwaltung, keine Stundendaten)');
+    console.log('Befehle:\n  migrate\n  invite [email] [--days=7]   Einladung für ein Nutzerkonto\n  admin <email> [--days=7]    Einladung für ein Admin-Konto (Verwaltung, keine Stundendaten)\n  change-email <alt> <neu> [--no-mail]   Adresse direkt ändern, ohne Bestätigungslink');
     process.exitCode = cmd ? 2 : 0;
   }
 } catch (e) {

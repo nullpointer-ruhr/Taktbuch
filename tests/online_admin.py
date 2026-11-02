@@ -43,7 +43,12 @@ async def main():
             await a.fill('#iEmail', user_addr); await a.click('#fInvite button')
             await a.wait_for_function("()=>document.querySelector('#inviteMsg').textContent.includes('verschickt')")
             check('Einladung über die Verwaltung per Mail', mail_link(user_addr, 'invite') is not None)
-            check('Einladung erscheint als offen', 'offen' in await a.inner_text('#invites'))
+            try:
+                await a.wait_for_function(f"()=>[...document.querySelectorAll('#invites tr')].some(r=>r.textContent.includes('{user_addr}')&&r.textContent.includes('offen'))", timeout=10000)
+                invite_open = True
+            except Exception:
+                invite_open = False
+            check('Einladung erscheint als offen', invite_open)
 
             # Nutzer registriert sich, arbeitet in der App, nutzt die Konto-Seite
             du = await b.new_context(accept_downloads=True); u = await du.new_page(); page_errors(u, errs)
@@ -73,7 +78,11 @@ async def main():
             link = await asyncio.to_thread(lambda: next((re.search(re.escape(ORIGIN) + r'/email-bestaetigen#email=[\w-]+', str(p.get_payload(decode=True), 'utf-8')).group(0)
                     for _ in range(50) for m in MAILS if new_addr in m['To'] for p in m.walk() if p.get_content_type() == 'text/plain'), None))
             check('Bestätigungslink an die neue Adresse', link is not None)
-            await u.goto(link); await u.wait_for_function("()=>document.querySelector('#emailMsg').textContent.includes('Erledigt')")
+            # Öffnen allein ändert nichts (Link-Scanner in Firmen-Mailfiltern), erst der Knopf
+            await u.goto(link); await u.wait_for_selector('#emailConfirm:not([hidden])')
+            me = await u.evaluate("()=>fetch('/api/me',{credentials:'same-origin'}).then(r=>r.json())")
+            check('Link öffnen allein übernimmt die Adresse nicht', me.get('email') == user_addr)
+            await u.click('#emailConfirm'); await u.wait_for_function("()=>document.querySelector('#emailMsg').textContent.includes('Erledigt')")
             check('Hinweis an die alte Adresse', any(user_addr == m['To'] and 'geändert' in subject(m) for m in MAILS))
             await u.click('#emailNext'); await u.wait_for_selector('#tabs .tab')
             await u.goto(ORIGIN + '/konto'); await u.wait_for_selector('.dev')
@@ -95,8 +104,13 @@ async def main():
             await a.locator('#users tr', has_text=user_addr).locator('button[data-act="reset-mfa"]').click()
             await a.wait_for_function(f"()=>[...document.querySelectorAll('#users tr')].some(r=>r.textContent.includes('{user_addr}')&&r.textContent.includes('Einrichtung offen'))")
             check('Zweiter Faktor zurückgesetzt, Mail an den Nutzer', any(user_addr in m['To'] and 'zurückgesetzt' in subject(m) for m in MAILS))
-            audit = await a.inner_text('#audit')
-            check('Protokoll zeigt die Aktionen', all(x in audit for x in ('Nutzer gesperrt', 'Zweiter Faktor zurückgesetzt')))
+            # Protokoll lädt nach der Aktion asynchron nach: darauf warten statt sofort lesen
+            try:
+                await a.wait_for_function("()=>['Nutzer gesperrt','Zweiter Faktor zurückgesetzt'].every(x=>document.querySelector('#audit').textContent.includes(x))", timeout=10000)
+                audit_ok = True
+            except Exception:
+                audit_ok = False
+            check('Protokoll zeigt die Aktionen', audit_ok)
 
             # Nutzer richtet neu ein und löscht dann sein Konto
             await u.click('#fLogin button'); await u.wait_for_selector('#fSetup:not([hidden])')

@@ -72,6 +72,10 @@ Oben rechts schaltest du zwischen Deutsch und Englisch um. Unter Einstellungen, 
 
 ## Was ist neu
 
+### 1.12.2
+
+- Online: Eine neue E-Mail-Adresse wird jetzt mit dem Knopf „Adresse bestätigen“ übernommen, nicht schon beim Öffnen des Links. Link-Scanner in Firmen-Mailfiltern haben den Link sonst vorab verbraucht.
+
 ### 1.12.1
 
 - Fehler behoben: Liegt das Startdatum in der aktuellen Woche oder in der Zukunft (neues Konto), ließen sich Heute, Woche und Kalender nicht öffnen. Tage vor dem Startdatum zeigen jetzt einen Hinweis.

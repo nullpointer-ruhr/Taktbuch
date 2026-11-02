@@ -72,6 +72,10 @@ Switch between German and English at the top right. Under Settings, Data you fin
 
 ## What's new
 
+### 1.12.2
+
+- Online: a new e-mail address is now applied with the "Confirm address" button, not as soon as the link opens. Link scanners in company mail filters could otherwise use up the link.
+
 ### 1.12.1
 
 - Fixed: if the start date was in the current week or in the future (new account), Today, Week and Calendar could not be opened. Days before the start date now show a note.
