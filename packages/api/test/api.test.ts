@@ -153,6 +153,21 @@ test('Health-Endpunkte', { skip }, async () => {
   assert.equal((await app.inject({ url: '/readyz' })).statusCode, 200);
 });
 
+test('Status: Version, Build und Datenbank', { skip }, async () => {
+  const r = await app.inject({ url: '/status' });
+  assert.equal(r.statusCode, 200);
+  assert.equal(r.headers['cache-control'], 'no-store');
+  const s = r.json();
+  assert.equal(s.ok, true);
+  assert.match(s.version, /^\d+\.\d+\.\d+$/, 'Version aus VERSION');
+  assert.ok(!Number.isNaN(Date.parse(s.started)), 'Startzeit');
+  assert.equal(typeof s.uptimeS, 'number');
+  assert.equal(s.db.ok, true);
+  assert.equal(s.db.pending, 0, 'keine offenen Migrationen');
+  assert.ok(s.db.migrations >= 1 && /\.sql$/.test(s.db.lastMigration));
+  assert.ok(!('users' in s) && !('host' in s), 'keine Interna');
+});
+
 const linkFrom = (m: Mail, key: string) => {
   const u = m.text.match(new RegExp(`${ORIGIN}/login#${key}=([A-Za-z0-9_-]+)`));
   assert.ok(u, 'Link in der Mail'); return u![1];
