@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.13.1
+
+- Online: new public endpoint `/status` showing the running version, commit, build time, uptime and database state (reachable, migrations). Handy to check a rollout. No user data or internal details.
+
 ## 1.13.0
 
 - With time grid "every quarter hour", typed times now stay exact to the minute (e.g. time clock entries from the office). The "now" buttons and the timer still round to the quarter hour, the time fields still offer the 15-minute list.
