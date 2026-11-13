@@ -1,4 +1,14 @@
 {
+  "1.13.0": {
+    "de": [
+      "Bei „viertelstündlich“ bleiben eingetippte Uhrzeiten jetzt minutengenau, z. B. Stempeluhr-Zeiten aus dem Büro. Jetzt-Knöpfe und Timer runden weiter auf die Viertelstunde, die Auswahlliste bleibt in 15-Minuten-Schritten.",
+      "Fehler behoben: Im Zeitfeld (minutengenau) wurde schon nach der Stunde gespeichert. Der Cursor sprang nicht zu den Minuten, und aus 45 wurde 04. Die Uhrzeit wird jetzt beim Verlassen des Felds oder mit Enter übernommen."
+    ],
+    "en": [
+      "With “every quarter hour”, typed times now stay exact to the minute, e.g. time clock entries from the office. The now buttons and the timer still round to the quarter hour, the list keeps 15-minute steps.",
+      "Fixed: the time field (to the minute) saved right after the hour. The cursor did not move to the minutes, and 45 became 04. The time is now applied when leaving the field or with Enter."
+    ]
+  },
   "1.12.2": {
     "de": [
       "Online: Eine neue E-Mail-Adresse wird jetzt mit dem Knopf „Adresse bestätigen“ übernommen, nicht schon beim Öffnen des Links. Link-Scanner in Firmen-Mailfiltern haben den Link sonst vorab verbraucht."

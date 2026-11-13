@@ -124,7 +124,8 @@ function autofillForm(a, v) {
     if (prev) { setFormField('cat', prev.cat); setFormField('w', prev.w); setFormField('sys', prev.sys); setFormField('pn', prev.pn || ''); }
   }
 }
-function fieldChange(el, final) {
+function fieldChange(el, final) { fcEl = el; try { fieldChange_(el, final); } finally { fcEl = null; } }
+function fieldChange_(el, final) {
   const [scope, a, b] = el.dataset.f.split(':');
   let v = el.value;
   if (final && el.classList.contains('tq') && /^(form:[seu]|day:([seap]|hoAb)|act:[^:]+:[seu])$/.test(el.dataset.f)) {
@@ -205,11 +206,23 @@ function fieldChange(el, final) {
     if (a === 'xlsx') rd.readAsArrayBuffer(f); else rd.readAsText(f);
   }
 }
-document.addEventListener('change', ev => { const el = ev.target.closest('[data-f]'); if (el) fieldChange(el, true); });
+/* Browser-Zeitfelder (type=time) melden "change" schon nach jedem Segment (Stunde, erste Minutenziffer).
+   Würde dann gespeichert und neu gezeichnet, verliert das Feld mitten in der Eingabe den Fokus:
+   Der Cursor springt nicht zu den Minuten und aus 08:45 wird 08:04. Deshalb erst beim Verlassen oder mit Enter übernehmen. */
+const isTime = el => el && el.tagName === 'INPUT' && el.type === 'time';
+/* Beim Wechsel zwischen den Segmenten ist das Feld kurzzeitig nicht fokussiert, daher erst im nächsten Tick prüfen */
+const flushTime = el => setTimeout(() => { if (el.dataset.pending && el.isConnected && document.activeElement !== el) { delete el.dataset.pending; fieldChange(el, true); } }, 0);
+document.addEventListener('change', ev => {
+  const el = ev.target.closest('[data-f]'); if (!el) return;
+  if (isTime(el)) { el.dataset.pending = '1'; flushTime(el); return; }
+  fieldChange(el, true);
+});
+document.addEventListener('focusout', ev => { const el = ev.target; if (isTime(el) && el.dataset.f && el.dataset.pending) flushTime(el); });
 
 document.addEventListener('input', ev => { const el = ev.target.closest('[data-f]'); if (el && el.dataset.f.startsWith('form:')) fieldChange(el, false); });
 document.addEventListener('keydown', ev => {
   if (ev.key === 'Enter' && ev.target.closest('#addRow') && ev.target.tagName === 'INPUT') { ev.preventDefault(); ev.target.blur(); actions.addAct(); }
+  else if (ev.key === 'Enter' && isTime(ev.target) && ev.target.dataset.pending) { ev.preventDefault(); ev.target.blur(); }
 });
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => drawCharts());
 

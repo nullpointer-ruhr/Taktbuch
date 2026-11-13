@@ -72,6 +72,11 @@ Switch between German and English at the top right. Under Settings, Data you fin
 
 ## What's new
 
+### 1.13.0
+
+- With “every quarter hour”, typed times now stay exact to the minute, e.g. time clock entries from the office. The now buttons and the timer still round to the quarter hour, the list keeps 15-minute steps.
+- Fixed: the time field (to the minute) saved right after the hour. The cursor did not move to the minutes, and 45 became 04. The time is now applied when leaving the field or with Enter.
+
 ### 1.12.2
 
 - Online: a new e-mail address is now applied with the "Confirm address" button, not as soon as the link opens. Link scanners in company mail filters could otherwise use up the link.
