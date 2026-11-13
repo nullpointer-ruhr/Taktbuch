@@ -475,7 +475,7 @@ function viewEinst() {
       <p class="hint" style="grid-column:1/-1;margin:0">Echte Erhöhungen trägst du direkt in „Gehalt“ ein (Brutto des Monats). Ab diesem Monat rechnet die Prognose mit dem neuen Wert weiter. Erfasste Gehaltsmonate ändern sich durch diese Einstellungen nicht.</p>
     </div>` : ''}${sub === 'erfassung' ? `    <h4 class="sh">Zeiterfassung</h4>
     <div class="fields wide">
-      <div class="field"><label for="c_ra">Uhrzeiten erfassen</label><select id="c_ra" data-f="cfg:raster">${opt('min', 'minutengenau', c.raster || 'min')}${opt('15', 'viertelstündlich', c.raster || 'min')}</select><span class="hint">Bei „viertelstündlich“ bieten die Zeitfelder (Kommen, Gehen, Von, Bis) eine Auswahlliste in 15-Minuten-Schritten an und springen in 15-Minuten-Schritten, eingetippte Uhrzeiten und der Timer (Kommen/Gehen jetzt, Tätigkeiten) werden auf die nächste Viertelstunde auf- oder abgerundet. Bereits erfasste Zeiten bleiben unverändert.</span></div>
+      <div class="field"><label for="c_ra">Uhrzeiten erfassen</label><select id="c_ra" data-f="cfg:raster">${opt('min', 'minutengenau', c.raster || 'min')}${opt('15', 'viertelstündlich', c.raster || 'min')}</select><span class="hint">Bei „viertelstündlich“ bieten die Zeitfelder (Kommen, Gehen, Von, Bis) eine Auswahlliste in 15-Minuten-Schritten an, und der Timer (Kommen/Gehen jetzt, Tätigkeiten) wird auf die nächste Viertelstunde auf- oder abgerundet. Eingetippte Uhrzeiten bleiben minutengenau, z. B. für Stempeluhr-Zeiten aus dem Büro. Bereits erfasste Zeiten bleiben unverändert.</span></div>
     </div>
     <h4 class="sh">Arbeitsort und Auszahlung</h4>
     <div class="fields wide">
@@ -562,7 +562,22 @@ function render() {
   $('#banner').innerHTML = S.demo ? `<div class="banner"><span><b>Beispieldaten.</b> Diese Einträge sind erfunden. Lade deine Excel unter „Einstellungen“ → „Daten“, um mit deinen Zahlen zu arbeiten.</span><button class="btn sm primary" data-a="tab" data-v="daten">Excel importieren</button></div>` : '';
   const v = { heute: viewHeute, woche: viewWoche, monat: viewMonat, urlaub: viewUrlaub, taet: viewTaet, auswertung: viewAuswertung, gehalt: viewGehalt, einst: viewEinst, hilfe: viewHilfe }[UI.tab];
   const sy = window.scrollY;
-  $('#view').innerHTML = v() + (S.cfg.raster === '15' ? `<datalist id="dl-t15">${Array.from({ length: 96 }, (_, i) => `<option value="${pad2(Math.floor(i / 4))}:${pad2((i % 4) * 15)}">`).join('')}</datalist><datalist id="dl-d15">${Array.from({ length: 33 }, (_, i) => `<option value="${pad2(Math.floor(i / 4))}:${pad2((i % 4) * 15)}">`).join('')}</datalist>` : '');
+  /* Fokus über das Neuzeichnen retten: Wer mit Tab ins nächste Feld wechselt, während das vorige gespeichert wird,
+     soll dort weitertippen können. Noch nicht übernommene Eingaben im fokussierten Feld bleiben erhalten. */
+  const ae = document.activeElement, view = $('#view');
+  const fk = ae && ae !== document.body && view.contains(ae) && /^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName)
+    ? (ae.id ? '#' + CSS.escape(ae.id) : ae.dataset.f ? `[data-f="${CSS.escape(ae.dataset.f)}"]` + (ae.dataset.k ? `[data-k="${CSS.escape(ae.dataset.k)}"]` : '') : null) : null;
+  const fv = fk && ae !== fcEl && ae.type !== 'checkbox' && ae.type !== 'radio' ? { v: ae.value, p: ae.dataset.pending } : null;
+  let sel = null; try { sel = fk ? [ae.selectionStart, ae.selectionEnd] : null; } catch (e) { /* type=time/number kennen keine Auswahl */ }
+  view.innerHTML = v() + (S.cfg.raster === '15' ? `<datalist id="dl-t15">${Array.from({ length: 96 }, (_, i) => `<option value="${pad2(Math.floor(i / 4))}:${pad2((i % 4) * 15)}">`).join('')}</datalist><datalist id="dl-d15">${Array.from({ length: 33 }, (_, i) => `<option value="${pad2(Math.floor(i / 4))}:${pad2((i % 4) * 15)}">`).join('')}</datalist>` : '');
+  if (fk) {
+    const n = view.querySelector(fk);
+    if (n) {
+      if (fv && n.value !== fv.v) { n.value = fv.v; if (fv.p) n.dataset.pending = fv.p; }
+      n.focus({ preventScroll: true });
+      try { if (sel && sel[0] != null) n.setSelectionRange(sel[0], sel[1]); } catch (e) { /* nicht unterstützt */ }
+    }
+  }
   window.scrollTo(0, sy);
   $('#langSw').innerHTML = ['de', 'en'].map(l => `<button data-a="lang" data-v="${l}" aria-pressed="${I18N.lang === l}" title="${l === 'de' ? 'Deutsch' : 'English'}">${l.toUpperCase()}</button>`).join('');
   updatePill(); drawCharts();

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.13.0
+
+- With time grid "every quarter hour", typed times now stay exact to the minute (e.g. time clock entries from the office). The "now" buttons and the timer still round to the quarter hour, the time fields still offer the 15-minute list.
+- Fix: in browser time fields (time grid "to the minute") the entry was saved and redrawn after the hour already. The cursor did not move on to the minutes, and typing 45 turned into 04. Times are now applied when leaving the field or with Enter.
+- Moving to the next field while the previous one is being saved keeps the cursor and anything already typed there.
+
 ## 1.12.2
 
 - Online: confirming a new e-mail address now takes a click on "Confirm address" instead of happening as soon as the page opens. Link scanners in company mail filters open links in advance and could otherwise use up the link.

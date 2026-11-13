@@ -72,6 +72,11 @@ Oben rechts schaltest du zwischen Deutsch und Englisch um. Unter Einstellungen, 
 
 ## Was ist neu
 
+### 1.13.0
+
+- Bei „viertelstündlich“ bleiben eingetippte Uhrzeiten jetzt minutengenau, z. B. Stempeluhr-Zeiten aus dem Büro. Jetzt-Knöpfe und Timer runden weiter auf die Viertelstunde, die Auswahlliste bleibt in 15-Minuten-Schritten.
+- Fehler behoben: Im Zeitfeld (minutengenau) wurde schon nach der Stunde gespeichert. Der Cursor sprang nicht zu den Minuten, und aus 45 wurde 04. Die Uhrzeit wird jetzt beim Verlassen des Felds oder mit Enter übernommen.
+
 ### 1.12.2
 
 - Online: Eine neue E-Mail-Adresse wird jetzt mit dem Knopf „Adresse bestätigen“ übernommen, nicht schon beim Öffnen des Links. Link-Scanner in Firmen-Mailfiltern haben den Link sonst vorab verbraucht.
